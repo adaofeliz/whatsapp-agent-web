@@ -86,3 +86,19 @@ export const messageProposalsCache = sqliteTable('message_proposals_cache_v2', {
   proposals: text('proposals').notNull(),
   created_at: text('created_at').notNull().default(sql`(datetime('now'))`),
 });
+
+export const timingAnalysisCache = sqliteTable('timing_analysis_cache', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  chat_jid: text('chat_jid').notNull(),
+  message_version_ts: integer('message_version_ts').notNull(),
+  value: text('value').notNull(),
+  created_at: text('created_at').notNull().default(sql`(datetime('now'))`),
+});
+
+export const dropoutAnalysisCache = sqliteTable('dropout_analysis_cache', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  chat_jid: text('chat_jid').notNull(),
+  message_version_ts: integer('message_version_ts').notNull(),
+  value: text('value').notNull(),
+  created_at: text('created_at').notNull().default(sql`(datetime('now'))`),
+});

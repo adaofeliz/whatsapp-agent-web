@@ -39,6 +39,16 @@ export function AppShell({ children }: AppShellProps) {
   usePolling(fetchPendingCount, 30000);
   useEffect(() => { fetchPendingCount(); }, []);
 
+  const pollAutoResponse = async () => {
+    try {
+      await fetch('/api/auto-response/poll', { cache: 'no-store' });
+    } catch (error) {
+      console.error('Auto-response poll failed:', error);
+    }
+  };
+
+  usePolling(pollAutoResponse, 10000);
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });

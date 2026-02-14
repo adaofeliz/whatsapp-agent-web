@@ -237,18 +237,138 @@ export async function generateProposals(
   return proposals;
 }
 
+export async function getCachedTimingAnalysis(
+  chatJid: string,
+  messageVersionTs: number
+): Promise<TimingAnalysis | null> {
+  const db = getAppDb();
+  const cached = await db
+    .select()
+    .from(schema.timingAnalysisCache)
+    .where(
+      and(
+        eq(schema.timingAnalysisCache.chat_jid, chatJid),
+        eq(schema.timingAnalysisCache.message_version_ts, messageVersionTs)
+      )
+    )
+    .limit(1);
+
+  if (cached.length > 0) {
+    return JSON.parse(cached[0].value) as TimingAnalysis;
+  }
+  return null;
+}
+
+export async function setCachedTimingAnalysis(
+  chatJid: string,
+  messageVersionTs: number,
+  analysis: TimingAnalysis
+): Promise<void> {
+  const db = getAppDb();
+  await db
+    .insert(schema.timingAnalysisCache)
+    .values({
+      chat_jid: chatJid,
+      message_version_ts: messageVersionTs,
+      value: JSON.stringify(analysis),
+      created_at: new Date().toISOString(),
+    })
+    .onConflictDoUpdate({
+      target: [schema.timingAnalysisCache.chat_jid, schema.timingAnalysisCache.message_version_ts],
+      set: {
+        value: JSON.stringify(analysis),
+        created_at: new Date().toISOString(),
+      },
+    });
+}
+
+export async function getCachedDropoutAnalysis(
+  chatJid: string,
+  messageVersionTs: number
+): Promise<DropoutAnalysis | null> {
+  const db = getAppDb();
+  const cached = await db
+    .select()
+    .from(schema.dropoutAnalysisCache)
+    .where(
+      and(
+        eq(schema.dropoutAnalysisCache.chat_jid, chatJid),
+        eq(schema.dropoutAnalysisCache.message_version_ts, messageVersionTs)
+      )
+    )
+    .limit(1);
+
+  if (cached.length > 0) {
+    return JSON.parse(cached[0].value) as DropoutAnalysis;
+  }
+  return null;
+}
+
+export async function setCachedDropoutAnalysis(
+  chatJid: string,
+  messageVersionTs: number,
+  analysis: DropoutAnalysis
+): Promise<void> {
+  const db = getAppDb();
+  await db
+    .insert(schema.dropoutAnalysisCache)
+    .values({
+      chat_jid: chatJid,
+      message_version_ts: messageVersionTs,
+      value: JSON.stringify(analysis),
+      created_at: new Date().toISOString(),
+    })
+    .onConflictDoUpdate({
+      target: [schema.dropoutAnalysisCache.chat_jid, schema.dropoutAnalysisCache.message_version_ts],
+      set: {
+        value: JSON.stringify(analysis),
+        created_at: new Date().toISOString(),
+      },
+    });
+}
+
 export async function analyzeTimingPatterns(
-  messages: Message[]
+  messages: Message[],
+  chatJid?: string,
+  messageVersionTs?: number
 ): Promise<TimingAnalysis> {
+  if (chatJid && messageVersionTs) {
+    const cached = await getCachedTimingAnalysis(chatJid, messageVersionTs);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const prompt = buildTimingAnalysisPrompt(messages);
-  return callAI<TimingAnalysis>("timing_analysis", prompt);
+  const analysis = await callAI<TimingAnalysis>("timing_analysis", prompt);
+
+  if (chatJid && messageVersionTs) {
+    await setCachedTimingAnalysis(chatJid, messageVersionTs, analysis);
+  }
+
+  return analysis;
 }
 
 export async function analyzeDropouts(
-  messages: Message[]
+  messages: Message[],
+  chatJid?: string,
+  messageVersionTs?: number
 ): Promise<DropoutAnalysis> {
+  if (chatJid && messageVersionTs) {
+    const cached = await getCachedDropoutAnalysis(chatJid, messageVersionTs);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const prompt = buildDropoutAnalysisPrompt(messages);
-  return callAI<DropoutAnalysis>("dropout_analysis", prompt);
+  const analysis = await callAI<DropoutAnalysis>("dropout_analysis", prompt);
+
+  if (chatJid && messageVersionTs) {
+    await setCachedDropoutAnalysis(chatJid, messageVersionTs, analysis);
+  }
+
+  return analysis;
 }
 
 export async function generateAutoResponse(

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { listChats } from '@/lib/db/wacli';
 import { ChatFilter } from '@/types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -19,7 +22,16 @@ export async function GET(request: NextRequest) {
 
     const chats = listChats(filter);
 
-    return NextResponse.json({ chats });
+    return NextResponse.json(
+      { chats },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching chats:', error);
     return NextResponse.json({ error: 'Failed to fetch chats' }, { status: 500 });

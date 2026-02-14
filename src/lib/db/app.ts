@@ -111,6 +111,27 @@ export function getAppDb() {
       proposals TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS timing_analysis_cache (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chat_jid TEXT NOT NULL,
+      message_version_ts INTEGER NOT NULL,
+      value TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(chat_jid, message_version_ts)
+    );
+
+    CREATE TABLE IF NOT EXISTS dropout_analysis_cache (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chat_jid TEXT NOT NULL,
+      message_version_ts INTEGER NOT NULL,
+      value TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(chat_jid, message_version_ts)
+    );
+
+    INSERT OR IGNORE INTO settings (key, value, updated_at) 
+    VALUES ('auto_response_enabled', 'true', datetime('now'));
   `);
 
   dbInstance = drizzle(sqlite, { schema });

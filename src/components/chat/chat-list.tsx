@@ -23,7 +23,9 @@ export function ChatList() {
       if (searchQuery) {
         params.set('q', searchQuery);
       }
-      const res = await fetch(`/api/chats?${params.toString()}`);
+      const res = await fetch(`/api/chats?${params.toString()}`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
         setChats(data.chats);
@@ -33,7 +35,7 @@ export function ChatList() {
     }
   };
 
-  usePolling(fetchChats, 10000);
+  usePolling(fetchChats, 2000);
 
   useEffect(() => {
     fetchChats();

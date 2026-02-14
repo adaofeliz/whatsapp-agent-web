@@ -23,8 +23,19 @@ export async function GET(request: NextRequest) {
       timestamp: msg.ts
     }));
 
-    const dropoutAnalysis = await analyzeDropouts(aiMessages);
-    return NextResponse.json(dropoutAnalysis);
+    const messageVersionTs = messages.length > 0 
+      ? Math.max(...messages.map(m => m.ts))
+      : 0;
+
+    const dropoutAnalysis = await analyzeDropouts(aiMessages, chatJid, messageVersionTs);
+
+    return NextResponse.json({
+      ...dropoutAnalysis,
+      meta: {
+        chatJid,
+        messageVersionTs,
+      },
+    });
   } catch (error) {
     console.error('Error analyzing dropouts:', error);
     return NextResponse.json({ error: 'Failed to analyze dropouts' }, { status: 500 });

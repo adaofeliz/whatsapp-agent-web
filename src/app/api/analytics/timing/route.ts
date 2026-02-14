@@ -24,11 +24,19 @@ export async function GET(request: NextRequest) {
       timestamp: msg.ts
     }));
 
-    const timingAnalysis = await analyzeTimingPatterns(aiMessages);
+    const messageVersionTs = messages.length > 0 
+      ? Math.max(...messages.map(m => m.ts))
+      : 0;
+
+    const timingAnalysis = await analyzeTimingPatterns(aiMessages, chatJid, messageVersionTs);
 
     return NextResponse.json({
       analysis: timingAnalysis,
       hourlyStats: hourlyStats,
+      meta: {
+        chatJid,
+        messageVersionTs,
+      },
     });
   } catch (error) {
     console.error('Error analyzing timing:', error);

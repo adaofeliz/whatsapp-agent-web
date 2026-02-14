@@ -144,3 +144,92 @@ export function stopPoller(): void {
 export function isPollerRunning(): boolean {
   return pollerInterval !== null;
 }
+
+export async function pollOnce(): Promise<{
+  processed: number;
+  found: number;
+  skipped: number;
+  errors: number;
+}> {
+  const result = { processed: 0, found: 0, skipped: 0, errors: 0 };
+
+  if (isProcessing) {
+    console.log("[auto-response poller] Already processing, skipping poll");
+    return result;
+  }
+
+  isProcessing = true;
+
+  try {
+    const lastCheckedTs = await getLastCheckedTimestamp();
+    const wacliDb = getWacliDb();
+
+    const newMessages = wacliDb
+      .prepare(
+        `
+      SELECT msg_id, chat_jid, text, ts
+      FROM messages
+      WHERE from_me = 0
+        AND ts > ?
+        AND chat_jid LIKE '%@s.whatsapp.net'
+        AND text IS NOT NULL
+        AND text != ''
+      ORDER BY ts ASC
+      LIMIT 100
+    `
+      )
+      .all(lastCheckedTs) as Array<{
+        msg_id: string;
+        chat_jid: string;
+        text: string;
+        ts: number;
+      }>;
+
+    if (newMessages.length === 0) {
+      console.log("[auto-response poller] No new messages");
+      return result;
+    }
+
+    result.found = newMessages.length;
+    console.log(
+      `[auto-response poller] Found ${newMessages.length} new message(s)`
+    );
+
+    for (const message of newMessages) {
+      try {
+        const processResult = await processIncomingMessage(
+          message.chat_jid,
+          message.msg_id,
+          message.text,
+          message.ts
+        );
+
+        if (processResult.action === "skipped") {
+          result.skipped++;
+        } else {
+          result.processed++;
+        }
+
+        console.log(
+          `[auto-response poller] Processed ${message.msg_id}: ${processResult.action} - ${processResult.reason}`
+        );
+      } catch (error) {
+        result.errors++;
+        console.error(
+          `[auto-response poller] Failed to process message ${message.msg_id}:`,
+          error
+        );
+      }
+    }
+
+    const maxTs = Math.max(...newMessages.map((m) => m.ts));
+    await updateLastCheckedTimestamp(maxTs);
+  } catch (error) {
+    console.error("[auto-response poller] Poll failed:", error);
+    result.errors++;
+  } finally {
+    isProcessing = false;
+  }
+
+  return result;
+}

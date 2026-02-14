@@ -19,7 +19,9 @@ export function MessageList({ chatJid }: MessageListProps) {
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch(`/api/messages?chatJid=${encodeURIComponent(chatJid)}&limit=50`);
+      const res = await fetch(`/api/messages?chatJid=${encodeURIComponent(chatJid)}&limit=50`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
         setMessages(data.messages.reverse());
@@ -29,7 +31,7 @@ export function MessageList({ chatJid }: MessageListProps) {
     }
   };
 
-  usePolling(fetchMessages, 10000);
+  usePolling(fetchMessages, 2000);
 
   useEffect(() => {
     fetchMessages();
