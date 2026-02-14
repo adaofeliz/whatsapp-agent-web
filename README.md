@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WhatsApp Agent Web
 
-## Getting Started
+A full-stack WhatsApp analytics and messaging web application that reads from [wacli](https://github.com/steipete/wacli)'s SQLite database, provides AI-powered conversation analytics, and supports intelligent auto-response capabilities.
 
-First, run the development server:
+## Features
+
+- **Chat History Browser** - View all your WhatsApp chats with real-time sync
+- **AI Analytics** - Communication style profiles, timing analysis, frequency charts, dropout detection
+- **Smart Proposals** - AI generates 3 contextual reply suggestions
+- **Auto-Response** - Conservative safety (5/hr limit, approval queue for first 3 messages)
+- **Message Sending** - Send messages directly through the web interface
+
+## Quick Start with Docker Compose
+
+### Prerequisites
+
+1. **Install and authenticate wacli on your host machine:**
+   ```bash
+   git clone https://github.com/steipete/wacli.git
+   cd wacli
+   go build -tags sqlite_fts5 -o wacli ./cmd/wacli
+   ./wacli auth
+   # Scan QR code with WhatsApp on your phone
+   ```
+
+2. **Install Docker and Docker Compose**
+
+3. **Get OpenRouter API key** (optional, for AI features) at [openrouter.ai](https://openrouter.ai)
+
+### Run the Application
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone this repository
+git clone https://github.com/adaofeliz/whatsapp-agent-web.git
+cd whatsapp-agent-web
+
+# Configure environment
+cp .env.example .env
+# Edit .env and set:
+# - MASTER_PASSWORD_HASH (generate with: node -e "require('bcryptjs').hash('password', 10).then(console.log)")
+# - JWT_SECRET (generate with: openssl rand -base64 32)
+# - OPENROUTER_API_KEY (optional)
+# - WACLI_DB_PATH, WACLI_STORE_DIR, WACLI_BINARY_PATH
+
+# Build and start
+docker compose build
+docker compose up -d
+
+# Access the app at http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How It Works
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The Docker setup mounts your host's wacli installation:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Data Mount**: Your `~/.wacli` directory is mounted read-only into the container
+2. **Sync Process**: The container runs `wacli sync --follow` via supervisord
+3. **Database Access**: App reads from wacli.db (WhatsApp data) and writes to app.db (settings)
+4. **Message Sending**: Container stops sync, sends message, then restarts sync
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MASTER_PASSWORD_HASH` | Bcrypt hash of login password | `$2a$10$...` |
+| `JWT_SECRET` | Secret for session tokens | `openssl rand -base64 32` |
+| `OPENROUTER_API_KEY` | API key for AI features (optional) | `sk-or-v1-...` |
+| `WACLI_DB_PATH` | Path to wacli database | `/Users/you/.wacli/wacli.db` |
+| `WACLI_STORE_DIR` | Path to wacli store directory | `/Users/you/.wacli` |
+| `WACLI_BINARY_PATH` | Path to wacli binary | `/usr/local/bin/wacli` |
+| `APP_DB_PATH` | Path to app database | `./data/app.db` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Troubleshooting
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**"wacli.db not found"**
+- Verify wacli is authenticated: `ls -la ~/.wacli/`
+- Check paths in `.env` match your system
 
-## Deploy on Vercel
+**"Permission denied" on wacli.db**
+- Ensure your user owns `~/.wacli`: `chmod -R u+r ~/.wacli`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Sync not working**
+```bash
+# Check process status
+docker compose exec app supervisorctl status
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# View logs
+docker compose logs -f app | grep wacli-sync
+
+# Restart sync
+docker compose exec app supervisorctl restart wacli-sync
+```
+
+**Container issues**
+```bash
+# View logs
+docker compose logs app
+
+# Rebuild from scratch
+docker compose down -v
+docker compose up --build
+```
+
+## Management Commands
+
+```bash
+# Check status
+docker compose ps
+
+# View logs
+docker compose logs -f
+
+# Stop the app
+docker compose down
+
+# Restart
+docker compose restart
+
+# Update and rebuild
+docker compose down
+git pull
+docker compose build
+docker compose up -d
+```
