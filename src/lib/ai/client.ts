@@ -62,6 +62,46 @@ interface AutoResponse {
   reasoning: string;
 }
 
+function extractJsonContent(content: string): string {
+  const trimmed = content.trim();
+  const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fencedMatch) {
+    return fencedMatch[1].trim();
+  }
+
+  return trimmed;
+}
+
+function parseJsonResponse<T>(content: string): T {
+  const normalized = extractJsonContent(content);
+
+  try {
+    return JSON.parse(normalized) as T;
+  } catch (error) {
+    const objectStart = normalized.indexOf("{");
+    const objectEnd = normalized.lastIndexOf("}");
+    const arrayStart = normalized.indexOf("[");
+    const arrayEnd = normalized.lastIndexOf("]");
+
+    const hasObject = objectStart !== -1 && objectEnd !== -1 && objectEnd > objectStart;
+    const hasArray = arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart;
+
+    if (hasObject || hasArray) {
+      const useArray = hasArray && (!hasObject || arrayStart < objectStart);
+      const start = useArray ? arrayStart : objectStart;
+      const end = useArray ? arrayEnd : objectEnd;
+      const extracted = normalized.slice(start, end + 1);
+      return JSON.parse(extracted) as T;
+    }
+
+    if (error instanceof Error) {
+      throw new Error(`Failed to parse AI JSON response: ${error.message}`);
+    }
+
+    throw error;
+  }
+}
+
 async function callAI<T>(task: TaskType, prompt: string): Promise<T> {
   const client = getOpenRouterClient();
   const model = getModelForTask(task);
@@ -75,7 +115,9 @@ async function callAI<T>(task: TaskType, prompt: string): Promise<T> {
           content: prompt,
         },
       ],
-      responseFormat: { type: "json_object" },
+      ...(task === "message_generation"
+        ? {}
+        : { responseFormat: { type: "json_object" } }),
     },
   });
 
@@ -90,7 +132,7 @@ async function callAI<T>(task: TaskType, prompt: string): Promise<T> {
       throw new Error("Response content is not a string");
     }
 
-    return JSON.parse(contentString) as T;
+    return parseJsonResponse<T>(contentString);
   }
 
   throw new Error("Unexpected response format");

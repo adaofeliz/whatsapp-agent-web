@@ -91,8 +91,8 @@ export function MessageList({ chatJid }: MessageListProps) {
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-      <div className="space-y-6">
+    <ScrollArea className="h-full" ref={scrollRef}>
+      <div className="p-4 space-y-6">
         {messageGroups.map((group) => (
           <div key={group.date} className="space-y-4">
             <div className="flex justify-center sticky top-0 z-10">

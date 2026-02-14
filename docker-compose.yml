@@ -6,14 +6,18 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: whatsapp-agent-web
+    user: "0"
     ports:
       - "3000:3000"
     volumes:
-      - ${HOME}/.wacli:/data/wacli:ro
+      - ${HOME}/.wacli:/data/wacli:rw
       - app-data:/data/appdb
+    entrypoint: []
+    command: ["/bin/sh", "-c", "mkdir -p /data/appdb && chown -R nextjs:nogroup /data/wacli /data/appdb && exec supervisord -c /etc/supervisor/conf.d/supervisord.conf"]
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - COOKIE_SECURE=false
       - WACLI_DB_PATH=/data/wacli/wacli.db
       - WACLI_STORE_DIR=/data/wacli
       - WACLI_BINARY_PATH=/usr/local/bin/wacli
@@ -21,11 +25,12 @@ services:
       - MASTER_PASSWORD_HASH=${MASTER_PASSWORD_HASH}
       - JWT_SECRET=${JWT_SECRET}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - HOSTNAME=0.0.0.0
     env_file:
       - .env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

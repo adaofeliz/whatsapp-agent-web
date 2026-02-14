@@ -49,7 +49,7 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
       <header className="flex items-center justify-between px-4 py-2 border-b h-14 shrink-0">
         <Link href="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-80 transition-opacity">
           <MessageSquare className="w-5 h-5 text-primary" />
@@ -101,7 +101,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </header>
       
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 min-h-0 overflow-hidden">
         {children}
       </main>
     </div>

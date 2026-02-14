@@ -18,7 +18,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const displayName = chat?.name || chatJid.split('@')[0];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       <header className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <Avatar>
           <AvatarImage src={`/avatars/${chatJid}.png`} />
@@ -32,7 +32,9 @@ export default async function ChatPage({ params }: ChatPageProps) {
         </div>
       </header>
       
-      <MessageList chatJid={chatJid} />
+      <div className="flex-1 min-h-0">
+        <MessageList chatJid={chatJid} />
+      </div>
       <MessageInput chatJid={chatJid} />
     </div>
   );

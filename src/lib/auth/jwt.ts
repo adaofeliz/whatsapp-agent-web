@@ -57,11 +57,17 @@ export async function verifyToken(
  * Get the session cookie configuration
  */
 export function getSessionCookieConfig() {
+  // Use COOKIE_SECURE env if explicitly set, otherwise default to production check
+  const secure =
+    process.env.COOKIE_SECURE !== undefined
+      ? process.env.COOKIE_SECURE !== "false"
+      : process.env.NODE_ENV === "production";
+
   return {
     name: "session",
     maxAge: COOKIE_MAX_AGE,
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     sameSite: "lax" as const,
     path: "/",
   };

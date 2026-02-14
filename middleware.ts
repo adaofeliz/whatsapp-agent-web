@@ -1,45 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, getSessionCookieConfig } from "@/lib/auth/jwt";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
 const PUBLIC_PREFIXES = ["/_next", "/favicon.ico"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method;
 
-  if (
-    PUBLIC_PATHS.includes(pathname) ||
-    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  ) {
+  // Early return for static assets and Next.js internals
+  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
   }
 
-  const cookieConfig = getSessionCookieConfig();
-  const token = request.cookies.get(cookieConfig.name)?.value;
+  const response = NextResponse.next();
 
-  if (!token) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  // Add cache-busting headers for non-API GET requests to prevent stale client bundles
+  if (method === "GET" && !pathname.startsWith("/api/")) {
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
   }
 
-  const payload = await verifyToken(token);
-
-  if (!payload || !payload.authenticated) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3';
+import fs from 'fs';
+import path from 'path';
 import { getEnv } from '@/lib/env';
 import type {
   Chat,
@@ -23,7 +25,14 @@ export function getWacliDb(): Database.Database {
   }
 
   const env = getEnv();
-  
+  const wacliDir = path.dirname(env.WACLI_DB_PATH);
+  if (!fs.existsSync(wacliDir)) {
+    throw new Error(
+      `WACLI_DB_PATH directory does not exist: ${wacliDir}. ` +
+        `Set WACLI_DB_PATH to a valid wacli.db location or create the directory.`
+    );
+  }
+
   const db = new Database(env.WACLI_DB_PATH, {
     readonly: true,
     fileMustExist: true,
@@ -83,10 +92,12 @@ export function listMessages(filter?: MessageFilter): Message[] {
   
   let query = `
     SELECT rowid, chat_jid, msg_id, sender_jid, ts, from_me, text, display_text,
-           media_type, media_size, media_mime, media_sha256, media_caption, filename,
-           thumbnail_sha256, quoted_msg_id, reaction_msg_id, reaction_text,
-           deleted, edited, view_once, forwarded, broadcast,
-           ephemeral_duration, ephemeral_start_ts
+           media_type, file_length AS media_size, mime_type AS media_mime, 
+           file_sha256 AS media_sha256, media_caption, filename,
+           NULL AS thumbnail_sha256, NULL AS quoted_msg_id, NULL AS reaction_msg_id, 
+           NULL AS reaction_text, 0 AS deleted, 0 AS edited, 0 AS view_once, 
+           0 AS forwarded, 0 AS broadcast, NULL AS ephemeral_duration, 
+           NULL AS ephemeral_start_ts
     FROM messages
     WHERE 1=1
   `;
@@ -148,7 +159,8 @@ export function searchMessages(searchQuery: string, limit = 50): SearchResult[] 
   const stmt = db.prepare(`
     SELECT 
       m.rowid, m.chat_jid, m.msg_id, m.sender_jid, m.ts, m.from_me, 
-      m.text, m.display_text, m.media_type, m.media_caption,
+      m.text, m.display_text, m.media_type, m.media_caption, m.file_length,
+      m.mime_type, m.file_sha256,
       c.kind, c.name as chat_name,
       fts.rank
     FROM messages_fts fts
@@ -172,9 +184,9 @@ export function searchMessages(searchQuery: string, limit = 50): SearchResult[] 
       text: row.text,
       display_text: row.display_text,
       media_type: row.media_type,
-      media_size: null,
-      media_mime: null,
-      media_sha256: null,
+      media_size: row.file_length,
+      media_mime: row.mime_type,
+      media_sha256: row.file_sha256,
       media_caption: row.media_caption,
       filename: null,
       thumbnail_sha256: null,

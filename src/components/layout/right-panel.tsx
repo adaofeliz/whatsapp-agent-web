@@ -11,6 +11,7 @@ import { FrequencyChart } from '@/components/analytics/frequency-chart';
 import { DropoutList } from '@/components/analytics/dropout-list';
 import { OverviewStats } from '@/components/analytics/overview-stats';
 import { SuggestionPanel } from '@/components/ai/suggestion-panel';
+import { toast } from 'sonner';
 
 export function RightPanel() {
   const params = useParams();
@@ -52,6 +53,7 @@ export function RightPanel() {
         if (overviewRes.ok) setOverviewData(await overviewRes.json());
       } catch (error) {
         console.error("Failed to fetch analytics", error);
+        toast.error("Failed to load analytics");
       } finally {
         setIsLoading(false);
       }
@@ -77,30 +79,32 @@ export function RightPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col border-l bg-muted/10">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="px-4 py-2 border-b">
+    <div className="h-full flex flex-col border-l bg-muted/10 overflow-hidden">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <div className="px-4 py-2 border-b flex-shrink-0">
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="suggestions">AI Suggestions</TabsTrigger>
           </TabsList>
         </div>
         
-        <ScrollArea className="flex-1">
-          <div className="p-4 space-y-4">
-            <TabsContent value="analytics" className="m-0 space-y-4">
-              <OverviewStats data={overviewData} isLoading={isLoading} />
-              <StyleProfileCard data={styleProfile} isLoading={isLoading} />
-              <TimingChart data={timingData?.hourlyStats} isLoading={isLoading} />
-              <FrequencyChart data={frequencyData} isLoading={isLoading} />
-              <DropoutList data={dropoutData} isLoading={isLoading} />
-            </TabsContent>
-            
-            <TabsContent value="suggestions" className="m-0 space-y-4">
-              <SuggestionPanel chatJid={chatJid} />
-            </TabsContent>
-          </div>
-        </ScrollArea>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-4">
+              <TabsContent value="analytics" className="m-0 space-y-4">
+                <OverviewStats data={overviewData} isLoading={isLoading} />
+                <StyleProfileCard data={styleProfile} isLoading={isLoading} />
+                <TimingChart data={timingData?.hourlyStats} isLoading={isLoading} />
+                <FrequencyChart data={frequencyData} isLoading={isLoading} />
+                <DropoutList data={dropoutData} isLoading={isLoading} />
+              </TabsContent>
+              
+              <TabsContent value="suggestions" className="m-0 space-y-4">
+                <SuggestionPanel chatJid={chatJid} />
+              </TabsContent>
+            </div>
+          </ScrollArea>
+        </div>
       </Tabs>
     </div>
   );

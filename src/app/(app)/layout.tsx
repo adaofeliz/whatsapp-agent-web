@@ -10,16 +10,16 @@ export default function AppLayout({
 }) {
   return (
     <AppShell>
-      <div className="flex h-full">
+      <div className="flex h-full min-h-0">
         <aside className="w-[280px] border-r flex-shrink-0 bg-background">
           <ChatList />
         </aside>
-        <main className="flex-1 flex flex-col min-w-0 bg-background">
-          {children}
-        </main>
-        <aside className="w-[320px] border-l flex-shrink-0 bg-background hidden lg:block">
+        <aside className="w-[360px] border-r flex-shrink-0 bg-background">
           <RightPanel />
         </aside>
+        <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-background">
+          {children}
+        </main>
       </div>
     </AppShell>
   );

@@ -52,7 +52,7 @@ export function ChatList() {
           />
         </div>
       </div>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="flex flex-col">
           {chats.map((chat) => {
             const isActive = pathname === `/chat/${encodeURIComponent(chat.jid)}`;

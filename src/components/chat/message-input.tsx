@@ -34,7 +34,7 @@ export function MessageInput({ chatJid }: MessageInputProps) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to send message');
+        throw new Error(error.error || 'Failed to send message');
       }
 
       toast.success('Message sent');

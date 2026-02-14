@@ -4,6 +4,10 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
+const supervisorctlArgs = [
+  "-c",
+  "/etc/supervisor/conf.d/supervisord.conf",
+];
 
 type HealthStatus = 'ok' | 'degraded' | 'error';
 type WacliSyncStatus = 'running' | 'stopped';
@@ -18,7 +22,10 @@ interface HealthResponse {
 
 async function checkWacliSyncStatus(): Promise<WacliSyncStatus> {
   try {
-    const { stdout } = await execFileAsync('supervisorctl', ['status', 'wacli-sync']);
+    const { stdout } = await execFileAsync(
+      "supervisorctl",
+      [...supervisorctlArgs, "status", "wacli-sync"]
+    );
     return stdout.includes('RUNNING') ? 'running' : 'stopped';
   } catch (error) {
     return 'stopped';

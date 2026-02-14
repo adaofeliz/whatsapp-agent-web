@@ -28,7 +28,12 @@ export function SuggestionPanel({ chatJid }: SuggestionPanelProps) {
       if (!response.ok) throw new Error('Failed to generate proposals');
 
       const data = await response.json();
-      setProposals(data);
+      const proposalList = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.proposals)
+          ? data.proposals
+          : [];
+      setProposals(proposalList);
       setHasFetched(true);
     } catch (error) {
       toast.error('Failed to generate suggestions');
