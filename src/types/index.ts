@@ -91,9 +91,9 @@ export interface StyleProfile {
 export interface AutoResponseConfig {
   id: number;
   chat_jid: string;
-  enabled: number; // 0 or 1 (boolean)
+  enabled: boolean;
   style_profile_id: number | null;
-  require_approval: number; // 0 or 1 (boolean)
+  require_approval: boolean;
   max_daily_responses: number | null;
   daily_response_count: number;
   daily_count_reset_at: string | null; // ISO timestamp

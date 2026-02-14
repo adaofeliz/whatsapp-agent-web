@@ -85,6 +85,25 @@ export async function processIncomingMessage(
     };
   }
 
+  const pendingCount = await appDb
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.approvalQueue)
+    .where(
+      and(
+        eq(schema.approvalQueue.chat_jid, chatJid),
+        eq(schema.approvalQueue.status, "pending")
+      )
+    );
+
+  const totalPending = Number(pendingCount[0]?.count || 0);
+
+  if (totalPending >= 3) {
+    return {
+      action: "skipped",
+      reason: "Too many pending approvals",
+    };
+  }
+
   const wacliDb = getWacliDb();
   const recentMessages = wacliDb
     .prepare(

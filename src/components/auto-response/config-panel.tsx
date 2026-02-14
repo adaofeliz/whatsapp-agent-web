@@ -51,13 +51,15 @@ export function ConfigPanel() {
 
   const handleToggle = async (chatJid: string, enabled: boolean) => {
     try {
+      const updatedConfig = {
+        ...configs[chatJid],
+        chat_jid: chatJid,
+        enabled,
+      } as AutoResponseConfig;
+
       setConfigs(prev => ({
         ...prev,
-        [chatJid]: {
-          ...prev[chatJid],
-          chat_jid: chatJid,
-          enabled: enabled ? 1 : 0,
-        } as AutoResponseConfig
+        [chatJid]: updatedConfig,
       }));
 
       const res = await fetch('/api/settings/auto-response', {
@@ -112,7 +114,7 @@ export function ConfigPanel() {
           ) : (
             chats.map((chat) => {
               const config = configs[chat.jid];
-              const isEnabled = config?.enabled === 1;
+              const isEnabled = config?.enabled ?? false;
 
               return (
                 <div key={chat.jid} className="flex items-center justify-between p-3 border rounded-lg">
