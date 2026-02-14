@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whatsapp-agent-web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${HOME}/.wacli:/data/wacli:ro
+      - app-data:/data/appdb
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - WACLI_DB_PATH=/data/wacli/wacli.db
+      - WACLI_STORE_DIR=/data/wacli
+      - WACLI_BINARY_PATH=/usr/local/bin/wacli
+      - APP_DB_PATH=/data/appdb/app.db
+      - MASTER_PASSWORD_HASH=${MASTER_PASSWORD_HASH}
+      - JWT_SECRET=${JWT_SECRET}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  app-data:
+    driver: local
